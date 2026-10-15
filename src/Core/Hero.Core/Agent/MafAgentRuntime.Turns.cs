@@ -144,13 +144,10 @@ internal partial class MafAgentRuntime
             if (error is null && _session is not null && _agent is not null)
             {
                 var assistantText = assistant.ToString();
-                if (!string.IsNullOrEmpty(assistantText))
-                {
-                    _transcript.Add(new ChatMessage(ChatRole.Assistant, assistantText));
-                }
-
-                // Keep MAF session history aligned with what we actually sent/received.
-                _session.SetInMemoryChatHistory(_transcript.ToList());
+                // MAF session already holds tool call/result messages from this turn.
+                // Sync them into Hero's transcript so the next turn's clearHistory +
+                // CopyTranscript() replay keeps cross-turn tool continuity (DeepSeek workaround).
+                CommitSuccessfulTurn(_transcript, _session, assistantText);
                 await PersistAsync(userInput, assistantText, cancellationToken).ConfigureAwait(false);
             }
             else if (error is not null && _transcript.Count > 0)
@@ -214,6 +211,58 @@ internal partial class MafAgentRuntime
         {
             _transcript.AddRange(history);
         }
+    }
+
+    /// <summary>
+    /// After a successful turn, prefer MAF session history (includes
+    /// <see cref="FunctionCallContent"/> / <see cref="FunctionResultContent"/>).
+    /// Falling back to text-only assistant append would wipe tool continuity on the
+    /// next <c>clearHistory</c> + full-transcript replay.
+    /// </summary>
+    internal static void CommitSuccessfulTurn(
+        List<ChatMessage> transcript,
+        AgentSession session,
+        string assistantText)
+    {
+        ArgumentNullException.ThrowIfNull(transcript);
+        ArgumentNullException.ThrowIfNull(session);
+
+        session.TryGetInMemoryChatHistory(out var history);
+        CommitSuccessfulTurn(transcript, history, assistantText, out var writeBack);
+        if (writeBack is not null)
+        {
+            session.SetInMemoryChatHistory(writeBack);
+        }
+    }
+
+    /// <summary>
+    /// Pure commit logic (testable without constructing <see cref="AgentSession"/>).
+    /// When <paramref name="writeBackToSession"/> is non-null, the caller should
+    /// replace session history with that list.
+    /// </summary>
+    internal static void CommitSuccessfulTurn(
+        List<ChatMessage> transcript,
+        IReadOnlyList<ChatMessage>? sessionHistory,
+        string assistantText,
+        out List<ChatMessage>? writeBackToSession)
+    {
+        ArgumentNullException.ThrowIfNull(transcript);
+
+        if (sessionHistory is { Count: > 0 })
+        {
+            transcript.Clear();
+            transcript.AddRange(sessionHistory);
+            writeBackToSession = null;
+            return;
+        }
+
+        // Unexpected: session history missing after a successful run.
+        if (!string.IsNullOrEmpty(assistantText))
+        {
+            transcript.Add(new ChatMessage(ChatRole.Assistant, assistantText));
+        }
+
+        writeBackToSession = transcript.ToList();
     }
 
     /// <summary>

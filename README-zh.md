@@ -411,6 +411,8 @@ AddHeroAgent(p => p
 
 按工作目录分 key。随时可用 `/export` 或 `hi --export` 导出 tip 树。
 
+**同一 cwd 建议单实例：** session JSONL 有跨进程 `.lock`（append 前会重读 tip），不会把行写乱。但两个进程各有独立内存里的 MAF session，逻辑仍可能分叉——同一项目不要开两个终端跑 `hi`。
+
 ### 中断与恢复
 
 | 操作 | 行为 |

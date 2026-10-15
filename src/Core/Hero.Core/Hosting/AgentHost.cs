@@ -239,7 +239,14 @@ public sealed class AgentHost
 
     public async Task SetReasoningAsync(string level, CancellationToken cancellationToken = default)
     {
-        _options.ReasoningLevel = NormalizeReasoning(level);
+        if (!ReasoningLevelMapper.TryNormalize(level, out var normalized))
+        {
+            throw new ArgumentException(
+                $"Unknown reasoning level '{level}'. Use none|low|medium|high.",
+                nameof(level));
+        }
+
+        _options.ReasoningLevel = normalized;
         await PersistSettingsAsync(cancellationToken).ConfigureAwait(false);
         await _runtime.ReloadAgentAsync(cancellationToken).ConfigureAwait(false);
     }
@@ -380,19 +387,8 @@ public sealed class AgentHost
 
     private static string NormalizeReasoning(string? level)
     {
-        if (string.IsNullOrWhiteSpace(level))
-        {
-            return "none";
-        }
-
-        return level.Trim().ToLowerInvariant() switch
-        {
-            "off" or "minimal" or "none" => "none",
-            "low" => "low",
-            "med" or "medium" => "medium",
-            "high" => "high",
-            _ => "none",
-        };
+        _ = ReasoningLevelMapper.TryNormalize(level, out var normalized);
+        return normalized;
     }
 
     public async Task<string> RunTurnAsync(string userInput, CancellationToken cancellationToken = default)

@@ -52,6 +52,8 @@ internal sealed class JsonlMafSessionStore : IMafSessionStore
         try
         {
             var path = GetSessionFilePath(workingDirectory);
+            await using var fileLock = await SessionFileLock.AcquireAsync(path, cancellationToken).ConfigureAwait(false);
+
             var sessionDir = Path.GetDirectoryName(path)!;
             Directory.CreateDirectory(sessionDir);
 
@@ -100,7 +102,10 @@ internal sealed class JsonlMafSessionStore : IMafSessionStore
         await _gate.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
-            var index = await ReadIndexAsync(workingDirectory, cancellationToken).ConfigureAwait(false);
+            var path = GetSessionFilePath(workingDirectory);
+            await using var fileLock = await SessionFileLock.AcquireAsync(path, cancellationToken).ConfigureAwait(false);
+
+            var index = await ReadIndexUnlockedAsync(path, cancellationToken).ConfigureAwait(false);
             if (index.TipId is null || !index.Sessions.TryGetValue(index.TipId, out var session))
             {
                 return null;
@@ -132,15 +137,13 @@ internal sealed class JsonlMafSessionStore : IMafSessionStore
         try
         {
             var path = GetSessionFilePath(request.WorkingDirectory);
+            await using var fileLock = await SessionFileLock.AcquireAsync(path, cancellationToken).ConfigureAwait(false);
             Directory.CreateDirectory(Path.GetDirectoryName(path)!);
 
-            // Refresh tip from disk if another path / first append after continue.
-            if (!string.Equals(_indexedPath, path, StringComparison.OrdinalIgnoreCase))
-            {
-                var index = await ReadIndexUnlockedAsync(path, cancellationToken).ConfigureAwait(false);
-                _tipId = index.TipId;
-                _indexedPath = path;
-            }
+            // Always re-read tip under the cross-process lock so another hi's append is visible.
+            var index = await ReadIndexUnlockedAsync(path, cancellationToken).ConfigureAwait(false);
+            _tipId = index.TipId;
+            _indexedPath = path;
 
             var nodeId = Guid.NewGuid().ToString("N")[..12];
             var parentId = _tipId;
@@ -159,8 +162,6 @@ internal sealed class JsonlMafSessionStore : IMafSessionStore
                 user = request.UserInput,
                 assistant = request.AssistantOutput,
             };
-            await writer.WriteLineAsync(JsonSerializer.Serialize(turn, JsonOptions)).ConfigureAwait(false);
-
             var maf = new
             {
                 t = "maf",
@@ -170,10 +171,15 @@ internal sealed class JsonlMafSessionStore : IMafSessionStore
                 parentId,
                 session = request.Session,
             };
-            await writer.WriteLineAsync(JsonSerializer.Serialize(maf, JsonOptions)).ConfigureAwait(false);
-
             var tip = new { t = "tip", at, nodeId };
-            await writer.WriteLineAsync(JsonSerializer.Serialize(tip, JsonOptions)).ConfigureAwait(false);
+
+            // One write for the three JSONL records so a crash is less likely to leave
+            // a turn without its maf/tip siblings (still append-only; not a full txn).
+            var payload =
+                JsonSerializer.Serialize(turn, JsonOptions) + "\n" +
+                JsonSerializer.Serialize(maf, JsonOptions) + "\n" +
+                JsonSerializer.Serialize(tip, JsonOptions) + "\n";
+            await writer.WriteAsync(payload.AsMemory(), cancellationToken).ConfigureAwait(false);
             await writer.FlushAsync(cancellationToken).ConfigureAwait(false);
 
             _tipId = nodeId;
@@ -190,7 +196,10 @@ internal sealed class JsonlMafSessionStore : IMafSessionStore
         await _gate.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
-            var index = await ReadIndexAsync(workingDirectory, cancellationToken).ConfigureAwait(false);
+            var path = GetSessionFilePath(workingDirectory);
+            await using var fileLock = await SessionFileLock.AcquireAsync(path, cancellationToken).ConfigureAwait(false);
+
+            var index = await ReadIndexUnlockedAsync(path, cancellationToken).ConfigureAwait(false);
             _tipId = index.TipId;
             _indexedPath = index.FilePath;
             return new SessionTreeSnapshot
@@ -217,14 +226,16 @@ internal sealed class JsonlMafSessionStore : IMafSessionStore
         await _gate.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
-            var index = await ReadIndexAsync(workingDirectory, cancellationToken).ConfigureAwait(false);
+            var path = GetSessionFilePath(workingDirectory);
+            await using var fileLock = await SessionFileLock.AcquireAsync(path, cancellationToken).ConfigureAwait(false);
+
+            var index = await ReadIndexUnlockedAsync(path, cancellationToken).ConfigureAwait(false);
             var match = ResolveNodeId(index.Nodes, nodeIdOrPrefix);
             if (match is null || !index.Sessions.TryGetValue(match, out var session))
             {
                 return null;
             }
 
-            var path = index.FilePath;
             var at = DateTimeOffset.UtcNow;
             await using (var stream = new FileStream(path, FileMode.Append, FileAccess.Write, FileShare.Read))
             await using (var writer = new StreamWriter(stream, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false)))
@@ -250,12 +261,6 @@ internal sealed class JsonlMafSessionStore : IMafSessionStore
         {
             _gate.Release();
         }
-    }
-
-    private async Task<FileIndex> ReadIndexAsync(string workingDirectory, CancellationToken cancellationToken)
-    {
-        var path = GetSessionFilePath(workingDirectory);
-        return await ReadIndexUnlockedAsync(path, cancellationToken).ConfigureAwait(false);
     }
 
     private static async Task<FileIndex> ReadIndexUnlockedAsync(string path, CancellationToken cancellationToken)

@@ -410,6 +410,8 @@ These are first-class runtime concerns (Pi-style harness), not afterthoughts.
 
 Keyed by working directory so each project keeps its own tree. Export anytime with `/export` or `hi --export`.
 
+**Prefer one `hi` per cwd:** session JSONL uses a cross-process `.lock` file (and re-reads tip before append), so concurrent writers will not interleave corrupt lines. Two processes still keep separate in-memory MAF sessions and can diverge logically — avoid dual terminals on the same project.
+
 ### Interrupt & resume
 
 | Action | Behavior |

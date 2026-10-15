@@ -43,9 +43,11 @@ internal sealed partial class MafAgentRuntime : IAgentRuntime
     private string? _sessionId;
 
     /// <summary>
-    /// Hero-owned transcript. MAF/Harness+DeepSeek has been observed to ignore new
-    /// <see cref="RunStreamingAsync"/> user messages and keep replaying the first turn;
-    /// we clear session chat history and pass this full list every user leg.
+    /// Hero-owned transcript (user/assistant/tool messages). MAF/Harness+DeepSeek has been
+    /// observed to ignore new <see cref="AIAgent.RunStreamingAsync"/> user messages and keep
+    /// replaying the first turn; we clear session chat history and pass this full list every
+    /// user leg. After each successful turn, <c>CommitSuccessfulTurn</c> syncs from MAF so
+    /// tool call/result messages survive into the next replay.
     /// </summary>
     private readonly List<ChatMessage> _transcript = [];
 

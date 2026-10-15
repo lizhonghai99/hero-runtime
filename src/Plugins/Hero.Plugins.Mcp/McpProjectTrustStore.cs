@@ -23,6 +23,7 @@ public sealed class McpProjectTrustStore
     };
 
     private readonly string _path;
+    private readonly object _gate = new();
 
     public McpProjectTrustStore()
         : this(Path.Combine(ConventionPaths.UserRoot, "trusted-mcp.json"))
@@ -47,23 +48,29 @@ public sealed class McpProjectTrustStore
 
     public bool IsTrusted(string projectConfigPath, string contentHash)
     {
-        var doc = Load();
-        var key = NormalizeConfigKey(projectConfigPath);
-        return doc.Entries.TryGetValue(key, out var entry)
-            && string.Equals(entry.ContentHash, contentHash, StringComparison.OrdinalIgnoreCase);
+        lock (_gate)
+        {
+            var doc = Load();
+            var key = NormalizeConfigKey(projectConfigPath);
+            return doc.Entries.TryGetValue(key, out var entry)
+                && string.Equals(entry.ContentHash, contentHash, StringComparison.OrdinalIgnoreCase);
+        }
     }
 
     public void Trust(string projectConfigPath, string contentHash)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(contentHash);
-        var doc = Load();
-        var key = NormalizeConfigKey(projectConfigPath);
-        doc.Entries[key] = new TrustEntry
+        lock (_gate)
         {
-            ContentHash = contentHash.Trim(),
-            TrustedAtUtc = DateTimeOffset.UtcNow,
-        };
-        Save(doc);
+            var doc = Load();
+            var key = NormalizeConfigKey(projectConfigPath);
+            doc.Entries[key] = new TrustEntry
+            {
+                ContentHash = contentHash.Trim(),
+                TrustedAtUtc = DateTimeOffset.UtcNow,
+            };
+            Save(doc);
+        }
     }
 
     private TrustDocument Load()
@@ -100,7 +107,11 @@ public sealed class McpProjectTrustStore
             Directory.CreateDirectory(dir);
         }
 
-        File.WriteAllText(_path, JsonSerializer.Serialize(document, JsonOptions));
+        // Temp + replace so a crash mid-write cannot leave a truncated trust file.
+        var json = JsonSerializer.Serialize(document, JsonOptions);
+        var tempPath = _path + ".tmp";
+        File.WriteAllText(tempPath, json);
+        File.Move(tempPath, _path, overwrite: true);
     }
 
     private sealed class TrustDocument

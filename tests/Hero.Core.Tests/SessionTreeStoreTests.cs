@@ -112,6 +112,29 @@ public sealed class SessionTreeStoreTests
     }
 
     [Fact]
+    public async Task TwoStores_AppendSequentially_ShareTipChain()
+    {
+        // Simulates two processes: each store has its own memory, but file lock + tip
+        // re-read should parent the second append off the first store's tip.
+        using var temp = new TempDir();
+        var a = CreateStore(temp.Path);
+        var b = CreateStore(temp.Path);
+
+        await a.BeginNewAsync(temp.Path, "s1");
+        await a.AppendAsync(MakeAppend(temp.Path, "s1", "from-a"));
+        var tipA = a.CurrentTipId!;
+
+        await b.AppendAsync(MakeAppend(temp.Path, "s1", "from-b"));
+        var tipB = b.CurrentTipId!;
+
+        var tree = await a.GetTreeAsync(temp.Path);
+        Assert.Equal(2, tree.Nodes.Count);
+        Assert.Equal(tipB, tree.TipId);
+        var fromB = tree.Nodes.Single(n => n.Id == tipB);
+        Assert.Equal(tipA, fromB.ParentId);
+    }
+
+    [Fact]
     public async Task TruncatedTrailingJsonl_DoesNotThrow_KeepsPriorNodes()
     {
         using var temp = new TempDir();

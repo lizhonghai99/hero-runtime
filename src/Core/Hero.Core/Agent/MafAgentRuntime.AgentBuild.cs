@@ -283,21 +283,17 @@ internal partial class MafAgentRuntime
             """;
     }
 
-    private static ReasoningEffort MapReasoningEffort(string? level)
+    private ReasoningEffort MapReasoningEffort(string? level)
     {
-        if (string.IsNullOrWhiteSpace(level))
+        var effort = ReasoningLevelMapper.ToEffort(level, out var recognized);
+        if (!recognized)
         {
-            return ReasoningEffort.None;
+            _logger.LogWarning(
+                "Unknown reasoning level '{Level}'; using none (allowed: none|low|medium|high)",
+                level);
         }
 
-        return level.Trim().ToLowerInvariant() switch
-        {
-            "none" or "off" or "minimal" => ReasoningEffort.None,
-            "low" => ReasoningEffort.Low,
-            "medium" or "med" => ReasoningEffort.Medium,
-            "high" => ReasoningEffort.High,
-            _ => ReasoningEffort.None,
-        };
+        return effort;
     }
 
     private static bool IsAutoCompaction(string? mode) =>
