@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>Hero.Plugins.Observability</RootNamespace>
+    <Description>Observability plugin: model-call tracing and /trace slash command.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Core\Hero.Core\Hero.Core.csproj" />
+    <PackageReference Include="Microsoft.Agents.AI" />
+  </ItemGroup>
+
+</Project>

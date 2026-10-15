@@ -1,0 +1,18 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>Hero.Plugins.Workflow</RootNamespace>
+    <Description>MAF Workflows plugin: multi-step research pipeline with HITL approval and checkpoints.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Core\Hero.Core\Hero.Core.csproj" />
+    <PackageReference Include="Microsoft.Agents.AI.Workflows" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Hero.Core.Tests" />
+  </ItemGroup>
+
+</Project>

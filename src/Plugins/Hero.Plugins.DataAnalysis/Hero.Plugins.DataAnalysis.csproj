@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>Hero.Plugins.DataAnalysis</RootNamespace>
+    <Description>Demo data-analysis plugin: CSV tools + DataAnalyst sub-agent.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Core\Hero.Core\Hero.Core.csproj" />
+    <PackageReference Include="Microsoft.Agents.AI" />
+  </ItemGroup>
+
+</Project>

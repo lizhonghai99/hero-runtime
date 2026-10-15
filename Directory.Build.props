@@ -1,0 +1,12 @@
+<Project>
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <!-- Keep false until analyzers are clean; experimental API warnings are whitelisted below. -->
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <!-- OpenAI Responses + MAF harness APIs (BackgroundAgents/LoopAgent) are experimental. -->
+    <NoWarn>$(NoWarn);OPENAI001;MAAI001</NoWarn>
+  </PropertyGroup>
+</Project>

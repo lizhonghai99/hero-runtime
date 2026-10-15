@@ -1,0 +1,19 @@
+<Solution>
+  <Folder Name="/src/Core/">
+    <Project Path="src/Core/Hero.Core/Hero.Core.csproj" />
+  </Folder>
+  <Folder Name="/src/Host/">
+    <Project Path="src/Host/Hero.Cli/Hero.Cli.csproj" />
+  </Folder>
+  <Folder Name="/src/Plugins/">
+    <Project Path="src/Plugins/Hero.Plugins.Harness/Hero.Plugins.Harness.csproj" />
+    <Project Path="src/Plugins/Hero.Plugins.Coding/Hero.Plugins.Coding.csproj" />
+    <Project Path="src/Plugins/Hero.Plugins.DataAnalysis/Hero.Plugins.DataAnalysis.csproj" />
+    <Project Path="src/Plugins/Hero.Plugins.Observability/Hero.Plugins.Observability.csproj" />
+    <Project Path="src/Plugins/Hero.Plugins.Mcp/Hero.Plugins.Mcp.csproj" />
+    <Project Path="src/Plugins/Hero.Plugins.Workflow/Hero.Plugins.Workflow.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Hero.Core.Tests/Hero.Core.Tests.csproj" />
+  </Folder>
+</Solution>

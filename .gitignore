@@ -1,0 +1,44 @@
+## .NET
+bin/
+obj/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+.vs/
+*.DotSettings.user
+
+## Secrets / local
+.env
+.env.*
+!.env.example
+appsettings.*.local.json
+appsettings.Local.json
+*.pfx
+secrets.json
+
+## Agent runtime (local sessions / logs)
+.sessions/
+.logs/
+*.db
+*.db-shm
+*.db-wal
+
+## Local scratch
+.tmp/
+.tmp*
+*.tmp
+
+## Packed local tool feed
+nupkg/
+
+## Editor / local AI assistant config (not part of the project source)
+.cursor/
+
+## Local agent cwd copy (templates/ is the source of truth)
+# keep committed demo skills under .hero-agent/skills if present
+
+## OS
+Thumbs.db
+Desktop.ini
+.DS_Store

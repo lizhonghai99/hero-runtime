@@ -1,0 +1,6 @@
+{
+  "enabled": true,
+  "checkpoint": true,
+  "timeoutSeconds": 300,
+  "autoApprove": false
+}

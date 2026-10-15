@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>Hero.Plugins.Coding</RootNamespace>
+    <Description>Default coding plugin: read_file, local shell, ExploreAgent.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Core\Hero.Core\Hero.Core.csproj" />
+    <PackageReference Include="Microsoft.Agents.AI" />
+    <PackageReference Include="Microsoft.Agents.AI.Tools.Shell" />
+  </ItemGroup>
+
+</Project>

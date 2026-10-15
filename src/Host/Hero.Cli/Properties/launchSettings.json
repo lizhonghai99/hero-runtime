@@ -1,0 +1,20 @@
+{
+  "profiles": {
+    "hi": {
+      "commandName": "Project",
+      "commandLineArgs": "",
+      "workingDirectory": "../../..",
+      "environmentVariables": {
+        "DOTNET_ENVIRONMENT": "Development"
+      }
+    },
+    "hi (print smoke)": {
+      "commandName": "Project",
+      "commandLineArgs": "-p \"reply with exactly: pong\" --tool-approval off",
+      "workingDirectory": "../../..",
+      "environmentVariables": {
+        "DOTNET_ENVIRONMENT": "Development"
+      }
+    }
+  }
+}

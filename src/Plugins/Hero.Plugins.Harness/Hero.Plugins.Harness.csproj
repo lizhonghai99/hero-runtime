@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>Hero.Plugins.Harness</RootNamespace>
+    <Description>Optional plan/execute + todos harness (Pi keeps this out of core).</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Core\Hero.Core\Hero.Core.csproj" />
+    <PackageReference Include="Microsoft.Agents.AI" />
+  </ItemGroup>
+
+</Project>

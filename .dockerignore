@@ -1,0 +1,11 @@
+**/bin/
+**/obj/
+.git/
+.vs/
+.tmp/
+reports/
+nupkg/
+**/*.user
+**/*.suo
+**/agent-transcripts/
+**/.cursor/
